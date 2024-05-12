@@ -35,7 +35,8 @@ By sending multiple requests with a known outcome, it is possible to calibrate a
 
 ## Installation
 
-```git clone https://github.com/WillIWas123/HTTPDiff.git; python3 -m pip install HTTPDiff/```
+
+```python3 -m pip install httpdiff```
 
 ## How it all works
 
