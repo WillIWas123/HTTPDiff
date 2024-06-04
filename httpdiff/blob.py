@@ -258,7 +258,7 @@ class Blob:
                             self.previous_static_items[j] = Item()
 
                         # opcode+"2" = delete2, used for differentiating the two different cases where a line was deleted
-                        out.append(Diff(opcode + "2", self.previous_static_items[j], f'"{self.original_lines[j]}" - ""'))
+                        out.append(Diff(opcode + "2", self.previous_static_items[j], f'"{self.original_lines[j]}" - None'))
                         self.lock.release()
                         continue
 
@@ -272,7 +272,7 @@ class Blob:
                             self.previous_static_items[l1] = Item()
 
                         # opcode+"2" = insert2, used for differentiating the two different cases where a line was inserted
-                        out.append(Diff(opcode + "2", self.previous_static_items[l1], f'"" - "{lines[j]}"'))
+                        out.append(Diff(opcode + "2", self.previous_static_items[l1], f'None - "{lines[j]}"'))
                         self.lock.release()
                         continue
 
