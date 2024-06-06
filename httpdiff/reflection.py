@@ -108,6 +108,9 @@ def remove_reflections_string(text1, text2, payload1, payload2):
         l1, l2, r1, r2 = find_common_indexes(text1, start1, end1, text2, start2, end2)
         if l1 == -1 or r1 == -1 or l2 == -1 or r2 == -1:
             break
+
+        if l1 > l2 or r1 > r2:
+            break
         text1 = text1[:l1] + replace + text1[l2:]
         text2 = text2[:r1] + replace + text2[r2:]
         c += 1
@@ -119,7 +122,7 @@ def find_index(text, payload_strings):
     """
     Finds parts of the payload in the text. These indexes are further processed to find an exact location.
     """
-    c, c2, index, index2, start, end = 0, 0, 0, 0, -1, 0
+    c, c2, index, index2, start, end = 0, 0, 0, 0, -1, -1
     while True:
         c2 += 1
         if c2 > 1000:
