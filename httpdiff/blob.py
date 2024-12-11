@@ -41,7 +41,7 @@ class Item:
     def __init__(self, line=None):
         """
         analyze_methods is a set of properties that does not change for an item.
-        lines contains all the bytes/strings seen in the same location of the Blob
+        lines contains all the bytes seen in the same location of the Blob
         """
         self.std_dev = 0
         self.analyze_methods = set()
@@ -166,18 +166,18 @@ class Item:
 
 class Blob:
     """
-    Blob is a collection of Items, one Blob object is typically used for one area of bytes/strings, such as a response body or response headers.
+    Blob is a collection of Items, one Blob object is typically used for one area of bytes, such as a response body or response headers.
     """
 
     def __init__(self, line=None):
         """
-        items is a dict of all split strings from the given line.
-        appended_items are strings that has been inserted after the first response was submitted.
+        items is a dict of all split bytes from the given line.
+        appended_items are bytes that has been inserted after the first response was submitted.
         previous_static_items is starting empty and will be populated if previous static items suddenly change in is_diff.
         """
         self.lock = Lock()
         self.items = {}
-        self.compile = r",|\.|\s|;"
+        self.compile = rb",|\.|\s|;"
         self.appended_items = {}
         self.previous_static_items = {}
         self.original_lines = []
@@ -197,13 +197,11 @@ class Blob:
 
     def add_line(self, line):
         """
-        Takes bytes or a string as input and splits it up in to multiple Items.
+        Takes bytes as input and splits it up in to multiple Items.
         """
         self.lock.acquire()
         self.custom_add(line)
         if len(self.original_lines) == 0:
-            if isinstance(line, bytes) is True:
-                self.compile = self.compile.encode()
             self.compiled = re.compile(self.compile)
             self.original_lines = re.split(self.compiled, line)
             self.lock.release()
@@ -242,7 +240,7 @@ class Blob:
 
     def is_diff(self, line):
         """
-        Takes in bytes or a string, checks if any Item has changed behavior.
+        Takes in bytes, checks if any Item has changed behavior.
         """
         out = self.custom_is_diff(line)
 

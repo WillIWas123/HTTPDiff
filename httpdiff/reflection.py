@@ -91,11 +91,9 @@ def remove_reflections_string(text1, text2, payload1, payload2):
         return text1, text2
     payload1_strings = re.findall("[A-Za-z0-9]{4,}", payload1)
     payload2_strings = re.findall("[A-Za-z0-9]{4,}", payload2)
-    replace = "r-e-f-l-e-c-t-i-o-n"
-    if isinstance(text1, bytes):
-        payload1_strings = [i.encode() for i in payload1_strings]
-        payload2_strings = [i.encode() for i in payload2_strings]
-        replace = replace.encode()
+    replace = b"r-e-f-l-e-c-t-i-o-n"
+    payload1_strings = [i.encode() for i in payload1_strings]
+    payload2_strings = [i.encode() for i in payload2_strings]
 
     c = 0
     while True:

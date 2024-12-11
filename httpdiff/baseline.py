@@ -11,7 +11,7 @@ class Baseline:
 
     def __init__(self):
         """
-        A Blob object is created for each area of bytes/strings.
+        A Blob object is created for each area of bytes.
 
         """
         self.analyze_all = False
@@ -51,20 +51,20 @@ class Baseline:
 
             def custom_add_response(self,response,response_time,error,payload):
                 if response_time > 10:
-                    self.my_items.add_line("slow")
+                    self.my_items.add_line(b"slow")
                 else:
-                    self.my_items.add_line("fast")
+                    self.my_items.add_line(b"fast")
 
             def custom_is_diff(self,response,response_time,error,payload):
                 diffs = []
                 if response_time > 10:
-                    yield self.my_items.is_diff("slow")
+                    yield self.my_items.is_diff(b"slow")
                 else:
-                    yield self.my_items.is_diff("fast")
+                    yield self.my_items.is_diff(b"fast")
         """
         return
 
-    def add_response(self, response, response_time="0", error="", payload=""):
+    def add_response(self, response, response_time=0, error=b"", payload=""):
         """
         add_response adds another response to the baseline while calibrating.
         each Blob object gets more data appended to it.
@@ -72,27 +72,27 @@ class Baseline:
         self.custom_add_response(response, response_time, error, payload)
         if response == None:
             self.error_items.add_line(error)
-            self.response_time_item.add_line(str(response_time))
+            self.response_time_item.add_line(response_time)
             return
         if len(response.history) > 0:
-            self.redir_status_code_item.add_line(str(response.history[0].status_code))
+            self.redir_status_code_item.add_line(str(response.history[0].status_code).encode())
             self.redir_reason_items.add_line(response.history[0].reason)
             self.redir_header_items.add_line(response.history[0].headers)
             self.redir_body_items.add_line(response.history[0].content)
-            self.redir_body_length_item.add_line(str(len(response.history[0].content)))
+            self.redir_body_length_item.add_line(str(len(response.history[0].content)).encode())
         else:
-            self.redir_status_code_item.add_line("-1")
-            self.redir_reason_items.add_line("")
-            self.redir_header_items.add_line("")
+            self.redir_status_code_item.add_line(b"-1")
+            self.redir_reason_items.add_line(b"")
+            self.redir_header_items.add_line(b"")
             self.redir_body_items.add_line(b"")
-            self.redir_body_length_item.add_line("-1")
+            self.redir_body_length_item.add_line(b"-1")
 
-        self.status_code_item.add_line(str(response.status_code))
+        self.status_code_item.add_line(str(response.status_code).encode())
         self.reason_items.add_line(response.reason)
         self.header_items.add_line(response.headers)
         self.body_items.add_line(response.content)
-        self.body_length_item.add_line(str(len(response.content)))
-        self.response_time_item.add_line(str(response_time))
+        self.body_length_item.add_line(str(len(response.content)).encode())
+        self.response_time_item.add_line(response_time)
         self.error_items.add_line(error)
 
     def custom_is_diff(self, response, response_time, error, payload):
@@ -107,20 +107,20 @@ class Baseline:
 
             def custom_add_response(self,response,response_time,error,payload):
                 if response_time > 10:
-                    self.my_items.add_line("slow")
+                    self.my_items.add_line(b"slow")
                 else:
-                    self.my_items.add_line("fast")
+                    self.my_items.add_line(b"fast")
 
 
             custom_is_diff(self,response,response_time,error,payload):
                 if response_time > 10:
-                    yield self.my_items.is_diff("slow")
+                    yield self.my_items.is_diff(b"slow")
                 else:
-                    yield self.my_items.is_diff("fast")
+                    yield self.my_items.is_diff(b"fast")
         """
         pass
 
-    def is_diff(self, response, response_time="0", error="", payload=""):
+    def is_diff(self, response, response_time=0, error=b"", payload=""):
         """
         is_diff checks if there's a difference between the baseline and the new response
 
@@ -135,11 +135,11 @@ class Baseline:
         if response == None:
             if out := self.error_items.is_diff(error):
                 yield out
-            if out := self.response_time_item.is_diff(str(response_time)):
+            if out := self.response_time_item.is_diff(response_time):
                 yield out
             return
         if len(response.history) > 0:
-            if out := self.redir_status_code_item.is_diff(str(response.history[0].status_code)):
+            if out := self.redir_status_code_item.is_diff(str(response.history[0].status_code).encode()):
                 yield out
             if out := self.redir_reason_items.is_diff(response.history[0].reason):
                 yield out
@@ -160,22 +160,22 @@ class Baseline:
                 if out := self.redir_body_items.is_diff(response.history[0].content):
                     yield out
             else:
-                if out := self.redir_body_length_item.is_diff(str(len(response.history[0].content))):
+                if out := self.redir_body_length_item.is_diff(str(len(response.history[0].content)).encode()):
                     yield out
             if out := self.redir_header_items.is_diff(response.history[0].headers):
                 yield out
         else:
-            if out := self.redir_status_code_item.is_diff("-1"):
+            if out := self.redir_status_code_item.is_diff(b"-1"):
                 yield out
-            if out := self.redir_reason_items.is_diff(""):
+            if out := self.redir_reason_items.is_diff(b""):
                 yield out
             if out := self.redir_body_items.is_diff(b""):
                 yield out
-            if out := self.redir_body_length_item.is_diff("-1"):
+            if out := self.redir_body_length_item.is_diff(b"-1"):
                 yield out
-            if out := self.redir_header_items.is_diff(""):
+            if out := self.redir_header_items.is_diff(b""):
                 yield out
-        if out := self.status_code_item.is_diff(str(response.status_code)):
+        if out := self.status_code_item.is_diff(str(response.status_code).encode()):
             yield out
         if out := self.reason_items.is_diff(response.reason):
             yield out
@@ -196,11 +196,11 @@ class Baseline:
             if out := self.body_items.is_diff(response.content):
                 yield out
         else:
-            if out := self.body_length_item.is_diff(str(len(response.content))):
+            if out := self.body_length_item.is_diff(str(len(response.content)).encode()):
                 yield out
         if out := self.header_items.is_diff(response.headers):
             yield out
-        if out := self.response_time_item.is_diff(str(response_time)):
+        if out := self.response_time_item.is_diff(response_time):
             yield out
         if out := self.error_items.is_diff(error):
             yield out

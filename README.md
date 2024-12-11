@@ -43,9 +43,9 @@ Here comes some details of how the library is built, feel free to skip this sect
 
 ### Here's the process for calibrating:
 
-1. The Analyzer object takes a response object as a parameter (among others), multiple Blobs are created, one for headers, reason (status code + message), response time, body etc.
-2. The input strings/bytes are split on multiple characters `,.; and whitespaces`. A list of these bytes/strings are stored as the original lines.
-3. A new response is inputted, the strings are similarly split on the same characters.
+1. The Baseline object takes a response object as a parameter (among others), multiple Blobs are created, one for headers, reason (status code + message), response time, body etc.
+2. The input bytes are split on multiple characters `,.; and whitespaces`. A list of these bytes are stored as the original lines.
+3. A new response is inputted, the bytes are similarly split on the same characters.
 4. Levenshtein's algorithm (similar to `git diff`) is used to generate opcodes describing how to transform the original lines to the new lines.
 5. Using these opcodes it is possible to relatively accurately determine the location of each Item, track replacements, insertions, deletions etc.
 6. A check for multiple properties are done, if all the lines in an Item have the same property it's stored as a method to analyze the lines in the future. A property in this case is a way to compare or measure a line.
@@ -55,7 +55,7 @@ Here comes some details of how the library is built, feel free to skip this sect
 
 ### Here's the process for diffing:
 
-1. A new response is inputted, the strings are similarly split on the same characters as before.
+1. A new response is inputted, the bytes are similarly split on the same characters as before.
 2. Opcodes are generated in a similar manner as before.
 3. Each line is compared against its respective Item, verifying the new line has the same properties as all the previous lines in the Item.
 4. If the line does not contain one of the stored properties, a Diff is created.
