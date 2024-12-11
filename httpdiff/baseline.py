@@ -4,9 +4,9 @@ import urllib.parse
 import datetime
 
 
-class Analyzer:
+class Baseline:
     """
-    Analyzer is the main class for this library.
+    Baseline is the main class for this library.
     """
 
     def __init__(self):
@@ -41,10 +41,10 @@ class Analyzer:
 
     def custom_add_response(self, response, response_time, error, payload):
         """
-        custom_add_response is made for being overwritten by a custom Analyzer object.
+        custom_add_response is made for being overwritten by a custom Baseline object.
         If you want to create your own checks while calibrating, change this function in a custom object. E.g.:
 
-        class CustomAnalyzer(Analyzer):
+        class CustomBaseline(Baseline):
             def __init__(self):
                 super().__init__()
                 self.my_items = Blob()
@@ -97,10 +97,10 @@ class Analyzer:
 
     def custom_is_diff(self, response, response_time, error, payload):
         """
-        custom_is_diff is made for being overwritten by a custom Analyzer object.
+        custom_is_diff is made for being overwritten by a custom Baseline object.
         If you want to create your diff checks, change this function in a custom object. E.g.:
 
-        class CustomAnalyzer(Analyzer):
+        class CustomBaseline(Baseline):
             def __init__(self):
                 super().__init__()
                 self.my_items = Blob()

@@ -26,11 +26,9 @@ By sending multiple requests with a known outcome, it is possible to calibrate a
 
 ## Usecases
 
-- Most (not all) content discovery tools rely solely on status codes for verifying if the endpoint exists (Good luck finding files and directories purposely hidden by returning a 404!). This is my attempt to create a flexible library designed to make it easy to create awesome scanners, finding all kinds of vulnerabilities!
+- Want to create a SQL injection scanner? Send a bunch of payloads with random strings for calibration, then send pairs of payloads (e.g. ' or '1'='1 and ' or '1'='2) and check for differences!
 
-- If you want to brute-force endpoints and directories on a web application, you can start by sending a series of requests to known invalid endpoints. The baseline can now be used to determine if any other endpoints behave in a similar way, or are somehow different. Go to [WebCD](https://github.com/WillIWas123/WebCD) for a good example on how to utilize this library.
-
-- Want to check if an endpoint changes over time? Create a small script to determine the normal behavior and check in later! (Note that certain content may change over time such as the Date header, calibrate over time for optimal results).
+- If you want to brute-force endpoints and directories on a web application, you can start by sending a series of requests to known invalid endpoints. The baseline can now be used to determine if any other endpoints behave in a similar way, or are somehow different. ~~Go to [WebCD](https://github.com/WillIWas123/WebCD) for a good example on how to utilize this library.~~ <- This is a work in progress, be patient.
 
 
 ## Installation
@@ -71,18 +69,18 @@ Here's a small example script showing how [HTTPDiff](https://github.com/WillIWas
 
 ```python
 import requests
-from httpdiff import Response, Analyzer, remove_reflection
+from httpdiff import Response, Baseline, remove_reflection
 import string
 import random
 
-def calibrate_baseline(analyzer):
+def calibrate_baseline(baseline):
     value = "".join(random.choice(string.ascii_letters) for _ in range(random.randint(3,15)))
     for _ in range(10):
         resp = requests.get(f"https://someurl/endpoint?param={value}")
         httpdiff_resp = Response(resp)
-        analyzer.add_response(httpdiff_resp)
+        baseline.add_response(httpdiff_resp)
 
-def scan(analyzer):
+def scan(baseline):
     # 10 1's and 10 2's are used for easier identifying the reflection in the response
     payload1 = "' or '1111111111'='1111111111"
     resp = requests.get(f"https://someurl/endpoint?param={payload1}")
@@ -98,15 +96,15 @@ def scan(analyzer):
     # Attempts to remove the reflection of the payloads
     remove_reflection(httpdiff_resp1,httpdiff_resp2,payload1,payload2)
 
-    diffs = list(analyzer.is_diff(httpdiff_resp1))
-    diffs2 = list(analyzer.is_diff(httpdiff_resp2))
+    diffs = list(baseline.is_diff(httpdiff_resp1))
+    diffs2 = list(baseline.is_diff(httpdiff_resp2))
     if diffs != diffs2:
       print(f"Vulnerable to SQL Injection!") 
 
 def main():
-    analyzer = Analyzer()
-    calibrate_baseline(analyzer)
-    scan(analyzer)
+    baseline = Baseline()
+    calibrate_baseline(baseline)
+    scan(baseline)
 
 if __name__ == "__main__": 
   main()
