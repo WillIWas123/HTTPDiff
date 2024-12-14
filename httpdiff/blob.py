@@ -311,8 +311,7 @@ class ResponseTimeBlob(Blob):
         self.lock.acquire()
         self.item.lines.add(line)
         try:
-            lines = [int(i.strip()) for i in self.item.lines]
-            self.std_dev = statistics.stdev(lines)
+            self.std_dev = statistics.stdev(self.item.lines)
         except Exception:
             pass
         self.lock.release()
