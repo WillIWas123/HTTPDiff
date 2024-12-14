@@ -322,18 +322,10 @@ class ResponseTimeBlob(Blob):
         checks if new line behaves different from calibrated behavior
         """
         out = []
-        if line.strip().isdigit() is False:
-            out.append(Diff(0, self, f"Response time is expected to be an integer: {line}"))
-            return out
-        try:
-            lines = [int(i.strip()) for i in self.item.lines]
-            lower = min(lines) - 7 * self.std_dev
-            upper = max(lines) + 7 * self.std_dev
-            integer_line = int(line.strip())
-        except Exception:
-            return out
-        if integer_line < lower:
-            out.append(Diff(1, self, f"Item is suddenly lower than usual: {integer_line} < {min(lines)}"))
-        if integer_line > upper:
-            out.append(Diff(2, self, f"Item is suddenly higher than usual: {integer_line} > {max(lines)}"))
+        lower = min(self.item.lines) - 7 * self.std_dev
+        upper = max(self.item.lines) + 7 * self.std_dev
+        if line < lower:
+            out.append(Diff(1, self, f"Item is suddenly lower than usual: {line} < {min(self.item.lines)}"))
+        if line > upper:
+            out.append(Diff(2, self, f"Item is suddenly higher than usual: {line} > {max(self.item.lines)}"))
         return out
