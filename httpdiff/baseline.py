@@ -1,7 +1,5 @@
 from .blob import Blob, Item, ResponseTimeBlob
-
 import urllib.parse
-import datetime
 
 
 class Baseline:
@@ -16,9 +14,9 @@ class Baseline:
         """
         self.analyze_all = False
         self.verbose = False
+        self.body_length_only = False
         self.error_items = Blob()
         self.response_time_item = ResponseTimeBlob()
-        self.body_length_only = False
         self.status_code_item = Blob()
         self.reason_items = Blob()
         self.header_items = Blob()
@@ -39,7 +37,7 @@ class Baseline:
         """
         pass
 
-    def custom_add_response(self, response, response_time, error, payload):
+    def custom_add_response(self, response, response_time=0, error=b"", payload=""):
         """
         custom_add_response is made for being overwritten by a custom Baseline object.
         If you want to create your own checks while calibrating, change this function in a custom object. E.g.:
@@ -64,7 +62,7 @@ class Baseline:
         """
         return
 
-    def add_response(self, response, response_time=0, error=b"", payload=""):
+    def add_response(self, response, response_time=0, error=b"", payload=None):
         """
         add_response adds another response to the baseline while calibrating.
         each Blob object gets more data appended to it.
@@ -76,9 +74,9 @@ class Baseline:
             return
         if len(response.history) > 0:
             self.redir_status_code_item.add_line(str(response.history[0].status_code).encode())
-            self.redir_reason_items.add_line(response.history[0].reason)
-            self.redir_header_items.add_line(response.history[0].headers)
-            self.redir_body_items.add_line(response.history[0].content)
+            self.redir_reason_items.add_line(response.history[0].reason,payload)
+            self.redir_header_items.add_line(response.history[0].headers,payload)
+            self.redir_body_items.add_line(response.history[0].content,payload)
             self.redir_body_length_item.add_line(str(len(response.history[0].content)).encode())
         else:
             self.redir_status_code_item.add_line(b"-1")
@@ -88,12 +86,12 @@ class Baseline:
             self.redir_body_length_item.add_line(b"-1")
 
         self.status_code_item.add_line(str(response.status_code).encode())
-        self.reason_items.add_line(response.reason)
-        self.header_items.add_line(response.headers)
-        self.body_items.add_line(response.content)
+        self.reason_items.add_line(response.reason,payload)
+        self.header_items.add_line(response.headers,payload)
+        self.body_items.add_line(response.content,payload)
         self.body_length_item.add_line(str(len(response.content)).encode())
         self.response_time_item.add_line(response_time)
-        self.error_items.add_line(error)
+        self.error_items.add_line(error,payload)
 
     def custom_is_diff(self, response, response_time, error, payload):
         """

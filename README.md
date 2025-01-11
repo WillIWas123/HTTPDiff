@@ -58,56 +58,57 @@ Here comes some details of how the library is built, feel free to skip this sect
 1. A new response is inputted, the bytes are similarly split on the same characters as before.
 2. Opcodes are generated in a similar manner as before.
 3. Each line is compared against its respective Item, verifying the new line has the same properties as all the previous lines in the Item.
-4. If the line does not contain one of the stored properties, a Diff is created.
+4. If the line does not adhere to one of the stored properties, a Diff is created.
 5. (Optional) Find differences in two responses with expected different outcomes and compare the diffs.
 
 ## Example usage
 
-Go visit [WebCD](https://github.com/WillIWas123/WebCD) to see an awesome content discovery tool utilizing [HTTPDiff](https://github.com/WillIWas123/HTTPDiff).
+~~Go visit [WebCD](https://github.com/WillIWas123/WebCD) to see an awesome content discovery tool utilizing [HTTPDiff](https://github.com/WillIWas123/HTTPDiff)~~.
 
 Here's a small example script showing how [HTTPDiff](https://github.com/WillIWas123/HTTPDiff) can be used:
 
 ```python
-import requests
-from httpdiff import Response, Baseline, remove_reflection
+from httpdiff import Response, Baseline
 import string
 import random
+import requests
 
 def calibrate_baseline(baseline):
-    value = "".join(random.choice(string.ascii_letters) for _ in range(random.randint(3,15)))
     for _ in range(10):
-        resp = requests.get(f"https://someurl/endpoint?param={value}")
+        value = "".join(random.choice(string.ascii_letters) for _ in range(random.randint(3,15)))
+        resp = requests.get(f"https://someurl/endpoint?parameter={value}")
         httpdiff_resp = Response(resp)
-        baseline.add_response(httpdiff_resp)
+        baseline.add_response(httpdiff_resp,payload=value) # Adding value as a parameter for finding reflections
+
+    # Often smart to repeat a single payload twice including a potentially cached response in the baseline
+    resp = requests.get(f"https://someurl/endpoint?parameter={value}")
+    httpdiff_resp = Response(resp)
+    baseline.add_response(httpdiff_resp,payload=value)
 
 def scan(baseline):
-    # 10 1's and 10 2's are used for easier identifying the reflection in the response
-    payload1 = "' or '1111111111'='1111111111"
-    resp = requests.get(f"https://someurl/endpoint?param={payload1}")
-    httpdiff_resp1 = Response(resp)
-    # Using lists instead of generator output because the diffs are going to be compared
+    payload1 = "' or '1'='1"
+    resp = requests.get(f"https://someurl/endpoint?parameter={payload1}")
+    httpdiff_resp1 = Response(resp) 
 
-
-    # payload2 in this example is supposed to contain a similar payload, but a different result if vulnerable. Kind of an opposite payload.
-    payload2 = "' or '1111111111'='2222222222"
-    resp = requests.get(f"https://someurl/endpoint?param={payload2}")
+    # payload2 in this example is supposed to contain a similar payload, but a different result if vulnerable. Kind of an opposite payload. 
+    payload2 = "' or '1'='2"
+    resp = requests.get(f"https://someurl/endpoint?parameter={payload2}")
     httpdiff_resp2 = Response(resp)
-
-    # Attempts to remove the reflection of the payloads
-    remove_reflection(httpdiff_resp1,httpdiff_resp2,payload1,payload2)
 
     diffs = list(baseline.is_diff(httpdiff_resp1))
     diffs2 = list(baseline.is_diff(httpdiff_resp2))
     if diffs != diffs2:
-      print(f"Vulnerable to SQL Injection!") 
+        print("Vulnerable to SQL Injection!")
+    else:
+        print("Not vulnerable to SQL injection!")
 
 def main():
     baseline = Baseline()
     calibrate_baseline(baseline)
     scan(baseline)
 
-if __name__ == "__main__": 
-  main()
+if __name__ == "__main__":
+    main()
 ```
 
 
@@ -127,9 +128,7 @@ Some tips for successfully creating your own scanner of some sort:
 - Use random values of random length when calibrating a baseline
 - Use cachebusters
 - Repeat one set of values during calibration (to ensure potential cache hits are included in the baseline)
-- Use relatively long values for values that are arbitrary (for removing reflection with better accuracy)
 - Verify the baseline upon a positive result
 - Verify the same payload a couple of times upon a positive result to verify it's not a fluke
 - Create an issue if you catch any mistakes in the library
 - Tell others about [HTTPDiff](https://github.com/WillIWas123/HTTPDiff)
-

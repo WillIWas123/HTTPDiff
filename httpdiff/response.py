@@ -17,6 +17,7 @@ class Response:
         self.reason = response.reason.encode()
         self.content = response.content
         self.headers = ""
+        self.request=response.request
         for i in response.headers:
             self.headers += f"{i}: {response.headers[i]}\n"
         self.headers=self.headers.encode()

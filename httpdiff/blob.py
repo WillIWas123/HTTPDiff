@@ -175,9 +175,10 @@ class Blob:
         appended_items are bytes that has been inserted after the first response was submitted.
         previous_static_items is starting empty and will be populated if previous static items suddenly change in is_diff.
         """
+        self.reflections={}
         self.lock = Lock()
         self.items = {}
-        self.compile = rb",|\.|\s|;"
+        self.compile = rb"(,|\.|\s|;)"
         self.appended_items = {}
         self.previous_static_items = {}
         self.original_lines = []
@@ -188,6 +189,7 @@ class Blob:
 
         self.original_lines = re.split(self.compiled, line)
 
+
     def custom_add(self, line):
         # TODO: make it easier to create custom functions
         """
@@ -195,10 +197,13 @@ class Blob:
         """
         return
 
-    def add_line(self, line):
+    def add_line(self, line,payload=None):
         """
         Takes bytes as input and splits it up in to multiple Items.
         """
+        if payload:
+            payload=payload.encode()
+
         self.lock.acquire()
         self.custom_add(line)
         if len(self.original_lines) == 0:
@@ -211,7 +216,12 @@ class Blob:
 
         diff = opcodes(self.original_lines, lines)
 
-        for opcode, l1, l2, r1, r2 in diff:
+        for opcode,l1,l2,r1,r2 in diff:
+            if payload: # Find reflections if a payload was set
+                for j in range(r1,r2): # Finding reflections
+                    if payload in lines[j]:
+                        rev_key = len(self.original_lines)-l1-1 # The same key, just counted from the back
+                        self.reflections[l1]=rev_key
             if opcode == "insert":
                 for j in range(r1, r2):
                     if self.appended_items.get(l1) is None:
@@ -222,7 +232,7 @@ class Blob:
                 for j in range(l1, l2):
                     if self.items.get(j) is None:
                         self.items[j] = Item(self.original_lines[j])
-                    self.items[j].add_line("")
+                    self.items[j].add_line(b"")
 
             elif opcode == "replace":
                 for l, r in zip(range(l1, l2), range(r1, r2)):
@@ -247,9 +257,35 @@ class Blob:
         lines = re.split(self.compiled, line)
         diff = opcodes(self.original_lines, lines)
 
-        for opcode, l1, l2, r1, r2 in diff:
-            if opcode == "delete":
-                for j in range(l1, l2):
+        if self.reflections:
+            diff_rev = opcodes(self.original_lines[::-1],lines[::-1]) # Calculating the diffs backwards to find the end of the reflection
+
+        # reflections=[] # TODO: Figure out the most sane way of returning the reflections found
+        # reflection = ""
+
+        reflection_start=None
+        reflection_end=None
+        for opcode,l1,l2,r1,r2 in diff:
+
+            if l1 in self.reflections.keys():
+                reflection_start = l1
+                reflection_rev = self.reflections[reflection_start]
+                for opcode_2,l1_2,l2_2,r1_2,r2_2 in diff_rev: # Finding the end of the reflection
+                    if l1_2 == reflection_rev:
+                        reflection_end = len(self.original_lines)-l1_2-1
+                        break
+            if reflection_start is not None and reflection_end is not None:
+                if l1 >= reflection_start and l1 <= reflection_end:
+                    # reflection += lines[r1].decode()
+                    continue
+                else:
+                    reflection_start=None
+                    reflection_end=None
+                    # reflections.append(reflection)
+                    # reflection=""
+
+            if opcode == "delete": 
+                for j in range(l1, l2): 
                     if self.items.get(j) is None:
                         self.lock.acquire()
                         if self.previous_static_items.get(j) is None:
