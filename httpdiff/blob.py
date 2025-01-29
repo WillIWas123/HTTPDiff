@@ -175,7 +175,7 @@ class Blob:
         appended_items are bytes that has been inserted after the first response was submitted.
         previous_static_items is starting empty and will be populated if previous static items suddenly change in is_diff.
         """
-        self.reflections={}
+        self.reflections=set()
         self.lock = Lock()
         self.items = {}
         self.compile = rb"(,|\.|\s|;)"
@@ -209,6 +209,16 @@ class Blob:
         if len(self.original_lines) == 0:
             self.compiled = re.compile(self.compile)
             self.original_lines = re.split(self.compiled, line)
+            if payload:
+                for c,i in enumerate(self.original_lines.copy()): # Copying so we can make modifications to the lines in the loop
+                    if payload in i:
+                        self.reflections.add(c)
+                        self.original_lines[c] = b"REFLECTION"
+
+                if self.reflections:
+                    self.original_lines = [i for i in self.original_lines if len(i) > 1 and i != b"REFLECTION"] # Reflections often include strings that are identical to strings just around the reflection point. These are often characters of low length such as spaces. These mess with the indexing of the reflection point.
+
+
             self.lock.release()
             return
 
@@ -217,11 +227,6 @@ class Blob:
         diff = opcodes(self.original_lines, lines)
 
         for opcode,l1,l2,r1,r2 in diff:
-            if payload: # Find reflections if a payload was set
-                for j in range(r1,r2): # Finding reflections
-                    if payload in lines[j]:
-                        rev_key = len(self.original_lines)-l1-1 # The same key, just counted from the back
-                        self.reflections[l1]=rev_key
             if opcode == "insert":
                 for j in range(r1, r2):
                     if self.appended_items.get(l1) is None:
@@ -254,35 +259,13 @@ class Blob:
         """
         out = self.custom_is_diff(line)
 
+
         lines = re.split(self.compiled, line)
+        if self.reflections:
+            lines = [i for i in lines if len(i) > 1] # Reflections often include strings that are identical to strings just around the reflection point. These are often characters of low length such as spaces. These mess with the indexing of the reflection point.
         diff = opcodes(self.original_lines, lines)
 
-        if self.reflections:
-            diff_rev = opcodes(self.original_lines[::-1],lines[::-1]) # Calculating the diffs backwards to find the end of the reflection
-
-        # reflections=[] # TODO: Figure out the most sane way of returning the reflections found
-        # reflection = ""
-
-        reflection_start=None
-        reflection_end=None
         for opcode,l1,l2,r1,r2 in diff:
-
-            if l1 in self.reflections.keys():
-                reflection_start = l1
-                reflection_rev = self.reflections[reflection_start]
-                for opcode_2,l1_2,l2_2,r1_2,r2_2 in diff_rev: # Finding the end of the reflection
-                    if l1_2 == reflection_rev:
-                        reflection_end = len(self.original_lines)-l1_2-1
-                        break
-            if reflection_start is not None and reflection_end is not None:
-                if l1 >= reflection_start and l1 <= reflection_end:
-                    # reflection += lines[r1].decode()
-                    continue
-                else:
-                    reflection_start=None
-                    reflection_end=None
-                    # reflections.append(reflection)
-                    # reflection=""
 
             if opcode == "delete": 
                 for j in range(l1, l2): 
@@ -296,7 +279,7 @@ class Blob:
                         self.lock.release()
                         continue
 
-                    out.extend(self.items[j].is_diff(opcode, ""))
+                    out.extend(self.items[j].is_diff(opcode, b""))
 
             elif opcode == "insert":
                 for j in range(r1, r2):
