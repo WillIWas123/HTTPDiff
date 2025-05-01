@@ -21,7 +21,7 @@ A library written for finding differences between HTTP responses.
 
 A lot of web pentesting tools suck, using regexes or hardcoded values to determine whether something is different. These methods will produce false-positives no matter how much you tweak those values. [HTTPDiff](https://github.com/WillIWas123/HTTPDiff) attempts to use a more dynamic way of differentiation responses, attempting to reduce the false-positives produced during a scan.
 
-By sending multiple requests with a known outcome, it is possible to calibrate a baseline of how the application normally behaves. [HTTPDiff](https://github.com/WillIWas123/HTTPDiff) can then be used to find deviations from the default behavior. [HTTPDiff](https://github.com/WillIWas123/HTTPDiff) will analyze every part of the response; the status code, reason, headers, body, response time, and even errors.
+By sending multiple requests with a known outcome, it is possible to calibrate a baseline of how the application normally behaves. [HTTPDiff](https://github.com/WillIWas123/HTTPDiff) can then be used to find deviations from the default behavior. [HTTPDiff](https://github.com/WillIWas123/HTTPDiff) will analyze every section of the response; the status code, reason, headers, body, response time, and even errors.
 
 
 ## Usecases

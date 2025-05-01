@@ -29,7 +29,7 @@ class Diff:
 
 class Item:
     """
-    Item is responsible for storing the normal behavior of a small part of the response and to check if there are any differences.
+    Item is responsible for storing the normal behavior of a small section of the response and to check if there are any differences.
     """
 
     Static = 1
@@ -62,7 +62,7 @@ class Item:
                 if "42" in line:
                     self.analyze_methods.add(100)
 
-            def custom_is_diff(self,opcode,line):
+            def custom_find_diffs(self,opcode,line):
                 out=[]
                 if 5 not in self.analyze_methods:
                     return out
@@ -101,7 +101,7 @@ class Item:
         self.analyze_methods = analyze_methods
         self.lock.release()
 
-    def custom_is_diff(self, opcode, line):
+    def custom_find_diffs(self, opcode, line):
         # TODO: make it easier to create custom functions
         """
         used for creating a custom diff function. E.g.:
@@ -111,7 +111,7 @@ class Item:
                 if "42" in line:
                     self.analyze_methods.add(5)
 
-            def custom_is_diff(self,opcode,line):
+            def custom_find_diffs(self,opcode,line):
                 out=[]
                 if 5 not in self.analyze_methods:
                     return out
@@ -122,11 +122,11 @@ class Item:
 
         return []
 
-    def is_diff(self, opcode, line):
+    def find_diffs(self, opcode, line):
         """
         checks if new line behaves different from calibrated behavior
         """
-        out = self.custom_is_diff(opcode, line)
+        out = self.custom_find_diffs(opcode, line)
         if len(self.analyze_methods) == 0:
             return out
         if len(self.lines) == 0:
@@ -173,7 +173,7 @@ class Blob:
         """
         items is a dict of all split bytes from the given line.
         appended_items are bytes that has been inserted after the first response was submitted.
-        previous_static_items is starting empty and will be populated if previous static items suddenly change in is_diff.
+        previous_static_items is starting empty and will be populated if previous static items suddenly change in find_diffs.
         """
         self.reflections=set()
         self.lock = Lock()
@@ -246,18 +246,18 @@ class Blob:
                     self.items[l].add_line(lines[r])
         self.lock.release()
 
-    def custom_is_diff(self, line):
+    def custom_find_diffs(self, line):
         # TODO: make it easier to create custom functions
         """
-        used for creating a custom is_diff function.
+        used for creating a custom find_diffs function.
         """
         return []
 
-    def is_diff(self, line):
+    def find_diffs(self, line):
         """
         Takes in bytes, checks if any Item has changed behavior.
         """
-        out = self.custom_is_diff(line)
+        out = self.custom_find_diffs(line)
 
 
         lines = re.split(self.compiled, line)
@@ -279,7 +279,7 @@ class Blob:
                         self.lock.release()
                         continue
 
-                    out.extend(self.items[j].is_diff(opcode, b""))
+                    out.extend(self.items[j].find_diffs(opcode, b""))
 
             elif opcode == "insert":
                 for j in range(r1, r2):
@@ -293,7 +293,7 @@ class Blob:
                         self.lock.release()
                         continue
 
-                    out.extend(self.appended_items[l1].is_diff(opcode, lines[j]))
+                    out.extend(self.appended_items[l1].find_diffs(opcode, lines[j]))
 
             elif opcode == "replace":
                 for l, r in zip(range(l1, l2), range(r1, r2)):
@@ -309,7 +309,7 @@ class Blob:
                         self.lock.release()
                         continue
 
-                    out.extend(self.items[l].is_diff(opcode, lines[r]))
+                    out.extend(self.items[l].find_diffs(opcode, lines[r]))
         return out
 
 
@@ -335,7 +335,7 @@ class ResponseTimeBlob(Blob):
             pass
         self.lock.release()
 
-    def is_diff(self, line):
+    def find_diffs(self, line):
         """
         checks if new line behaves different from calibrated behavior
         """

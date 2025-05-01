@@ -53,12 +53,12 @@ class Baseline:
                 else:
                     self.my_items.add_line(b"fast")
 
-            def custom_is_diff(self,response,response_time,error,payload):
+            def custom_find_diffs(self,response,response_time,error,payload):
                 diffs = []
                 if response_time > 10:
-                    yield self.my_items.is_diff(b"slow")
+                    yield self.my_items.find_diffs(b"slow")
                 else:
-                    yield self.my_items.is_diff(b"fast")
+                    yield self.my_items.find_diffs(b"fast")
         """
         return
 
@@ -93,9 +93,11 @@ class Baseline:
         self.response_time_item.add_line(response_time)
         self.error_items.add_line(error,payload)
 
-    def custom_is_diff(self, response, response_time, error, payload):
+    def custom_find_diffs(self, response, response_time, error, payload): # TODO: rewrite the part related to custom diffing
+        if 1 == 2:
+            yield [] # Makes the function behave as a generator and prevents errors
         """
-        custom_is_diff is made for being overwritten by a custom Baseline object.
+        custom_find_diffs is made for being overwritten by a custom Baseline object.
         If you want to create your diff checks, change this function in a custom object. E.g.:
 
         class CustomBaseline(Baseline):
@@ -110,37 +112,33 @@ class Baseline:
                     self.my_items.add_line(b"fast")
 
 
-            custom_is_diff(self,response,response_time,error,payload):
+            custom_find_diffs(self,response,response_time,error,payload):
                 if response_time > 10:
-                    yield self.my_items.is_diff(b"slow")
+                    yield self.my_items.find_diffs(b"slow")
                 else:
-                    yield self.my_items.is_diff(b"fast")
+                    yield self.my_items.find_diffs(b"fast")
         """
-        pass
 
-    def is_diff(self, response, response_time=0, error=b"", payload=""):
+    def find_diffs(self, response, response_time=0, error=b"", payload=""):
         """
-        is_diff checks if there's a difference between the baseline and the new response
+        find_diffs checks if there's a difference between the baseline and the new response
 
-        All parts of the response is checked for differences and yielded as found
+        All sections of the response is checked for differences and yielded as found
 
-        Note: payload is inputted as part of the arguments mainly to be used in custom_is_diff, in case you'd like to look out of reflection etc.
+        Note: payload is inputted as part of the arguments mainly to be used in custom_find_diffs, in case you'd like to look out of reflection etc.
         """
-        try:
-            yield from self.custom_is_diff(response, response_time, error, payload)
-        except Exception:
-            pass
+        yield from self.custom_find_diffs(response, response_time, error, payload)
         if response == None:
-            if out := self.error_items.is_diff(error):
-                yield out
-            if out := self.response_time_item.is_diff(response_time):
-                yield out
+            if out := self.error_items.find_diffs(error):
+                yield {"section": "error", "diffs":out}
+            if out := self.response_time_item.find_diffs(response_time):
+                yield {"section":"error","diffs":out}
             return
         if len(response.history) > 0:
-            if out := self.redir_status_code_item.is_diff(str(response.history[0].status_code).encode()):
-                yield out
-            if out := self.redir_reason_items.is_diff(response.history[0].reason):
-                yield out
+            if out := self.redir_status_code_item.find_diffs(str(response.history[0].status_code).encode()):
+                yield {"section":"status_code","diffs":out}
+            if out := self.redir_reason_items.find_diffs(response.history[0].reason):
+                yield {"section":"reason","diffs":out}
             if (
                 self.analyze_all is False
                 and len(self.redir_body_length_item.item.lines) == 1
@@ -155,28 +153,28 @@ class Baseline:
                     print("[INFO] Reverting to analyzing full redirection body!")
                 self.redir_body_length_only = False
             if self.redir_body_length_only is False:
-                if out := self.redir_body_items.is_diff(response.history[0].content):
-                    yield out
+                if out := self.redir_body_items.find_diffs(response.history[0].content):
+                    yield {"section":"body","diffs":out}
             else:
-                if out := self.redir_body_length_item.is_diff(str(len(response.history[0].content)).encode()):
-                    yield out
-            if out := self.redir_header_items.is_diff(response.history[0].headers):
-                yield out
+                if out := self.redir_body_length_item.find_diffs(str(len(response.history[0].content)).encode()):
+                    yield {"section":"body","diffs":out}
+            if out := self.redir_header_items.find_diffs(response.history[0].headers):
+                yield {"section":"headers","diffs":out}
         else:
-            if out := self.redir_status_code_item.is_diff(b"-1"):
-                yield out
-            if out := self.redir_reason_items.is_diff(b""):
-                yield out
-            if out := self.redir_body_items.is_diff(b""):
-                yield out
-            if out := self.redir_body_length_item.is_diff(b"-1"):
-                yield out
-            if out := self.redir_header_items.is_diff(b""):
-                yield out
-        if out := self.status_code_item.is_diff(str(response.status_code).encode()):
-            yield out
-        if out := self.reason_items.is_diff(response.reason):
-            yield out
+            if out := self.redir_status_code_item.find_diffs(b"-1"):
+                yield {"section":"status_code","diffs":out}
+            if out := self.redir_reason_items.find_diffs(b""):
+                yield {"section":"reason","diffs":out}
+            if out := self.redir_body_items.find_diffs(b""):
+                yield {"section":"body","diffs":out}
+            if out := self.redir_body_length_item.find_diffs(b"-1"):
+                yield {"section":"body","diffs":out}
+            if out := self.redir_header_items.find_diffs(b""):
+                yield {"section":"headers","diffs":out}
+        if out := self.status_code_item.find_diffs(str(response.status_code).encode()):
+            yield {"section":"status_code","diffs":out}
+        if out := self.reason_items.find_diffs(response.reason):
+            yield {"section":"reason","diffs":out}
         if (
             self.analyze_all is False
             and len(self.body_length_item.item.lines) == 1
@@ -191,15 +189,15 @@ class Baseline:
                 print("[INFO] Reverting to analyzing full body!")
             self.body_length_only = False
         if self.body_length_only is False:
-            if out := self.body_items.is_diff(response.content):
-                yield out
+            if out := self.body_items.find_diffs(response.content):
+                yield {"section":"body","diffs":out}
         else:
-            if out := self.body_length_item.is_diff(str(len(response.content)).encode()):
-                yield out
-        if out := self.header_items.is_diff(response.headers):
-            yield out
-        if out := self.response_time_item.is_diff(response_time):
-            yield out
-        if out := self.error_items.is_diff(error):
-            yield out
+            if out := self.body_length_item.find_diffs(str(len(response.content)).encode()):
+                yield {"section":"body","diffs":out}
+        if out := self.header_items.find_diffs(response.headers):
+            yield {"section":"headers","diffs":out}
+        if out := self.response_time_item.find_diffs(response_time):
+            yield {"section":"response_time","diffs":out}
+        if out := self.error_items.find_diffs(error):
+            yield {"section":"error","diffs":out}
         return
