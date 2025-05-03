@@ -13,7 +13,6 @@ class Baseline:
 
         """
         self.analyze_all = False
-        self.verbose = False
         self.body_length_only = False
         self.error_items = Blob()
         self.response_time_item = ResponseTimeBlob()
@@ -145,12 +144,8 @@ class Baseline:
                 and next(iter(self.redir_body_length_item.item.lines)) > 2000
             ):
                 if self.redir_body_length_only is False:
-                    if self.verbose is True:
-                        print("[INFO] Only analyzing redirection body length")
                     self.redir_body_length_only = True
             elif self.redir_body_length_only is True:
-                if self.verbose is True:
-                    print("[INFO] Reverting to analyzing full redirection body!")
                 self.redir_body_length_only = False
             if self.redir_body_length_only is False:
                 if out := self.redir_body_items.find_diffs(response.history[0].content):
@@ -181,12 +176,8 @@ class Baseline:
             and next(iter(self.body_length_item.item.lines)) > 2000
         ):
             if self.body_length_only is False:
-                if self.verbose is True:
-                    print("[INFO] Only analyzing body length")
                 self.body_length_only = True
         elif self.body_length_only is True:
-            if self.verbose is True:
-                print("[INFO] Reverting to analyzing full body!")
             self.body_length_only = False
         if self.body_length_only is False:
             if out := self.body_items.find_diffs(response.content):
