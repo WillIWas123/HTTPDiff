@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as f:
     LONG_DESCRIPTION = f.read()
 
-VERSION = "2.0.1"
+VERSION = "2.0.2"
 DESCRIPTION = "HTTPDiff - Finding differences between HTTP responses"
 
 setup(

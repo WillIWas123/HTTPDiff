@@ -19,7 +19,7 @@ class Diff:
 
     def __eq__(self, diff):
         """
-        If the Diff originates from the same item, then it is very likely the same difference occuring in two responses
+        If the Diff originates from the same item, then it is very likely the same difference occurring in two responses
         """
         return self.opcode == diff.opcode and self.item == diff.item
 
