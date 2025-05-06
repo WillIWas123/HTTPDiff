@@ -28,7 +28,7 @@ By sending multiple requests with a known outcome, it is possible to calibrate a
 
 - Want to create a SQL injection scanner? Send a bunch of payloads with random strings for calibration, then send pairs of payloads (e.g. ' or '1'='1 and ' or '1'='2) and check for differences!
 
-- If you want to brute-force endpoints and directories on a web application, you can start by sending a series of requests to known invalid endpoints. The baseline can now be used to determine if any other endpoints behave in a similar way, or are somehow different. ~~Go to [WebCD](https://github.com/WillIWas123/WebCD) for a good example on how to utilize this library.~~ <- This is a work in progress, be patient.
+- If you want to brute-force endpoints and directories on a web application, you can start by sending a series of requests to known invalid endpoints. The baseline can now be used to determine if any other endpoints behave in a similar way, or are somehow different. Go to [Diffuzz](https://github.com/WillIWas123/Diffuzz) for a good example on how to utilize this library.
 
 
 ## Installation
