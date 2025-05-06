@@ -63,7 +63,7 @@ Here comes some details of how the library is built, feel free to skip this sect
 
 ## Example usage
 
-~~Go visit [WebCD](https://github.com/WillIWas123/WebCD) to see an awesome content discovery tool utilizing [HTTPDiff](https://github.com/WillIWas123/HTTPDiff)~~.
+Go visit [Diffuzz](https://github.com/WillIWas123/Diffuzz) to see an awesome fuzzer utilizing [HTTPDiff](https://github.com/WillIWas123/HTTPDiff).
 
 Here's a small example script showing how [HTTPDiff](https://github.com/WillIWas123/HTTPDiff) can be used:
 
