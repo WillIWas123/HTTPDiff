@@ -7,27 +7,30 @@ class Baseline:
     Baseline is the main class for this library.
     """
 
-    def __init__(self):
+    def __init__(self,custom_baseline=None,custom_blob=None,custom_item=None):
         """
         A Blob object is created for each area of bytes.
 
         """
+        self.custom_baseline = custom_baseline() if custom_baseline else None
+        self.custom_blob = custom_blob
+        self.custom_item = custom_item
         self.analyze_all = False
         self.body_length_only = False
-        self.error_items = Blob()
-        self.response_time_item = ResponseTimeBlob()
-        self.status_code_item = Blob()
-        self.reason_items = Blob()
-        self.header_items = Blob()
-        self.body_items = Blob()
-        self.body_length_item = Blob()
+        self.error_items = Blob(custom_blob=custom_blob,custom_item=custom_item)
+        self.response_time_item = ResponseTimeBlob(custom_blob=custom_blob,custom_item=custom_item)
+        self.status_code_item = Blob(custom_blob=custom_blob,custom_item=custom_item)
+        self.reason_items = Blob(custom_blob=custom_blob,custom_item=custom_item)
+        self.header_items = Blob(custom_blob=custom_blob,custom_item=custom_item)
+        self.body_items = Blob(custom_blob=custom_blob,custom_item=custom_item)
+        self.body_length_item = Blob(custom_blob=custom_blob,custom_item=custom_item)
 
         self.redir_body_length_only = False
-        self.redir_status_code_item = Blob()
-        self.redir_reason_items = Blob()
-        self.redir_header_items = Blob()
-        self.redir_body_items = Blob()
-        self.redir_body_length_item = Blob()
+        self.redir_status_code_item = Blob(custom_blob=custom_blob,custom_item=custom_item)
+        self.redir_reason_items = Blob(custom_blob=custom_blob,custom_item=custom_item)
+        self.redir_header_items = Blob(custom_blob=custom_blob,custom_item=custom_item)
+        self.redir_body_items = Blob(custom_blob=custom_blob,custom_item=custom_item)
+        self.redir_body_length_item = Blob(custom_blob=custom_blob,custom_item=custom_item)
 
     # TODO: implement later
     def set_response(self, response, response_time, error, payload):
@@ -36,37 +39,13 @@ class Baseline:
         """
         pass
 
-    def custom_add_response(self, response, response_time=0, error=b"", payload=""):
-        """
-        custom_add_response is made for being overwritten by a custom Baseline object.
-        If you want to create your own checks while calibrating, change this function in a custom object. E.g.:
-
-        class CustomBaseline(Baseline):
-            def __init__(self):
-                super().__init__()
-                self.my_items = Blob()
-
-            def custom_add_response(self,response,response_time,error,payload):
-                if response_time > 10:
-                    self.my_items.add_line(b"slow")
-                else:
-                    self.my_items.add_line(b"fast")
-
-            def custom_find_diffs(self,response,response_time,error,payload):
-                diffs = []
-                if response_time > 10:
-                    yield self.my_items.find_diffs(b"slow")
-                else:
-                    yield self.my_items.find_diffs(b"fast")
-        """
-        return
-
     def add_response(self, response, response_time=0, error=b"", payload=None):
         """
         add_response adds another response to the baseline while calibrating.
         each Blob object gets more data appended to it.
         """
-        self.custom_add_response(response, response_time, error, payload)
+        if self.custom_baseline:
+            self.custom_baseline.add_response(response, response_time, error, payload)
         if response == None:
             self.error_items.add_line(error)
             self.response_time_item.add_line(response_time)
@@ -92,31 +71,6 @@ class Baseline:
         self.response_time_item.add_line(response_time)
         self.error_items.add_line(error,payload)
 
-    def custom_find_diffs(self, response, response_time, error, payload): # TODO: rewrite the part related to custom diffing
-        if 1 == 2:
-            yield [] # Makes the function behave as a generator and prevents errors
-        """
-        custom_find_diffs is made for being overwritten by a custom Baseline object.
-        If you want to create your diff checks, change this function in a custom object. E.g.:
-
-        class CustomBaseline(Baseline):
-            def __init__(self):
-                super().__init__()
-                self.my_items = Blob()
-
-            def custom_add_response(self,response,response_time,error,payload):
-                if response_time > 10:
-                    self.my_items.add_line(b"slow")
-                else:
-                    self.my_items.add_line(b"fast")
-
-
-            custom_find_diffs(self,response,response_time,error,payload):
-                if response_time > 10:
-                    yield self.my_items.find_diffs(b"slow")
-                else:
-                    yield self.my_items.find_diffs(b"fast")
-        """
 
     def find_diffs(self, response, response_time=0, error=b"", payload=""):
         """
@@ -124,9 +78,10 @@ class Baseline:
 
         All sections of the response is checked for differences and yielded as found
 
-        Note: payload is inputted as part of the arguments mainly to be used in custom_find_diffs, in case you'd like to look out of reflection etc.
+        Note: payload is inputted as part of the arguments mainly to be used in custom_baseline, in case you'd like to look out of reflection etc.
         """
-        yield from self.custom_find_diffs(response, response_time, error, payload)
+        if self.custom_baseline:
+            yield from self.custom_baseline.find_diffs(response, response_time, error, payload)
         if response == None:
             if out := self.error_items.find_diffs(error):
                 yield {"section": "error", "diffs":out}

@@ -38,11 +38,12 @@ class Item:
     Integer = 4
     Range = 5
 
-    def __init__(self, line=None):
+    def __init__(self, line=None, custom_item=None):
         """
         analyze_methods is a set of properties that does not change for an item.
         lines contains all the bytes seen in the same location of the Blob
         """
+        self.custom_item = custom_item() if custom_item else None
         self.std_dev = 0
         self.analyze_methods = set()
         self.lines = set()
@@ -52,32 +53,13 @@ class Item:
             return
         self.lines.add(line)
 
-    def custom_add(self, line):
-        # TODO: make it easier to create custom functions
-        """
-        used for specifying custom properties to an item during calibration. E.g.:
-
-        class CustomItem(Item):
-            def custom_add(self,line):
-                if "42" in line:
-                    self.analyze_methods.add(100)
-
-            def custom_find_diffs(self,opcode,line):
-                out=[]
-                if 5 not in self.analyze_methods:
-                    return out
-                if "42" not in line:
-                    out.append(Diff(opcode,self,f"New line does not include 42! {line}"))
-                return out
-        """
-        return
-
     def add_line(self, line):
         """
         adds line to self.lines and checks the unchanged properties of all lines.
         """
+        if self.custom_item:
+            self.custom_item.add_line(line)
         self.lock.acquire()
-        self.custom_add(line)
         self.lines.add(line)
         if Item.Range in self.analyze_methods:
             # Only expecting response time here for now
@@ -101,32 +83,13 @@ class Item:
         self.analyze_methods = analyze_methods
         self.lock.release()
 
-    def custom_find_diffs(self, opcode, line):
-        # TODO: make it easier to create custom functions
-        """
-        used for creating a custom diff function. E.g.:
-
-        class CustomItem(Item):
-            def custom_add(self,line):
-                if "42" in line:
-                    self.analyze_methods.add(5)
-
-            def custom_find_diffs(self,opcode,line):
-                out=[]
-                if 5 not in self.analyze_methods:
-                    return out
-                if "42" not in line:
-                    out.append(Diff(opcode,self,f"New line does not include 42! {line}"))
-                return out
-        """
-
-        return []
-
     def find_diffs(self, opcode, line):
         """
         checks if new line behaves different from calibrated behavior
         """
-        out = self.custom_find_diffs(opcode, line)
+        out = []
+        if self.custom_item:
+            out.extend(self.custom_item.find_diffs(opcode,line))
         if len(self.analyze_methods) == 0:
             return out
         if len(self.lines) == 0:
@@ -169,12 +132,14 @@ class Blob:
     Blob is a collection of Items, one Blob object is typically used for one area of bytes, such as a response body or response headers.
     """
 
-    def __init__(self, line=None):
+    def __init__(self, line=None, custom_blob=None, custom_item=None):
         """
         items is a dict of all split bytes from the given line.
         appended_items are bytes that has been inserted after the first response was submitted.
         previous_static_items is starting empty and will be populated if previous static items suddenly change in find_diffs.
         """
+        self.custom_blob = custom_blob() if custom_blob else None
+        self.custom_item = custom_item
         self.reflections=set()
         self.lock = Lock()
         self.items = {}
@@ -184,18 +149,12 @@ class Blob:
         self.original_lines = []
         self.compiled = re.compile(self.compile)
         if line is None:
-            self.item = Item()
+            self.item = Item(custom_item=self.custom_item)
             return
 
         self.original_lines = re.split(self.compiled, line)
 
 
-    def custom_add(self, line):
-        # TODO: make it easier to create custom functions
-        """
-        Used for creating a custom add function for a given line.
-        """
-        return
 
     def add_line(self, line,payload=None):
         """
@@ -204,8 +163,10 @@ class Blob:
         if payload:
             payload=payload.encode()
 
+        if self.custom_blob:
+            self.custom_blob.add_line(line,payload=payload)
+
         self.lock.acquire()
-        self.custom_add(line)
         if len(self.original_lines) == 0:
             self.compiled = re.compile(self.compile)
             self.original_lines = re.split(self.compiled, line)
@@ -230,34 +191,29 @@ class Blob:
             if opcode == "insert":
                 for j in range(r1, r2):
                     if self.appended_items.get(l1) is None:
-                        self.appended_items[l1] = Item(lines[j])
+                        self.appended_items[l1] = Item(lines[j],custom_item=self.custom_item)
                     self.appended_items[l1].add_line(lines[j])
 
             elif opcode == "delete":
                 for j in range(l1, l2):
                     if self.items.get(j) is None:
-                        self.items[j] = Item(self.original_lines[j])
+                        self.items[j] = Item(self.original_lines[j],custom_item=self.custom_item)
                     self.items[j].add_line(b"")
 
             elif opcode == "replace":
                 for l, r in zip(range(l1, l2), range(r1, r2)):
                     if self.items.get(l) is None:
-                        self.items[l] = Item(self.original_lines[l])
+                        self.items[l] = Item(self.original_lines[l],custom_item=self.custom_item)
                     self.items[l].add_line(lines[r])
         self.lock.release()
-
-    def custom_find_diffs(self, line):
-        # TODO: make it easier to create custom functions
-        """
-        used for creating a custom find_diffs function.
-        """
-        return []
 
     def find_diffs(self, line):
         """
         Takes in bytes, checks if any Item has changed behavior.
         """
-        out = self.custom_find_diffs(line)
+        out = []
+        if self.custom_blob:
+            out.extend(self.custom_blob.find_diffs(line))
 
 
         lines = re.split(self.compiled, line)
@@ -272,7 +228,7 @@ class Blob:
                     if self.items.get(j) is None:
                         self.lock.acquire()
                         if self.previous_static_items.get(j) is None:
-                            self.previous_static_items[j] = Item()
+                            self.previous_static_items[j] = Item(custom_item=self.custom_item)
 
                         # opcode+"2" = delete2, used for differentiating the two different cases where a line was deleted
                         out.append(Diff(opcode + "2", self.previous_static_items[j], f'"{self.original_lines[j]}" - None'))
@@ -286,7 +242,7 @@ class Blob:
                     if self.appended_items.get(l1) is None:
                         self.lock.acquire()
                         if self.previous_static_items.get(l1) is None:
-                            self.previous_static_items[l1] = Item()
+                            self.previous_static_items[l1] = Item(custom_item=self.custom_item)
 
                         # opcode+"2" = insert2, used for differentiating the two different cases where a line was inserted
                         out.append(Diff(opcode + "2", self.previous_static_items[l1], f'None - "{lines[j]}"'))
@@ -300,7 +256,7 @@ class Blob:
                     if self.items.get(l) is None:
                         self.lock.acquire()
                         if self.previous_static_items.get(l) is None:
-                            self.previous_static_items[l] = Item()
+                            self.previous_static_items[l] = Item(custom_item=self.custom_item)
 
                         # opcode+"2" = replace2, used for differentiating the two different cases where a line was replaced
                         out.append(
@@ -318,9 +274,9 @@ class ResponseTimeBlob(Blob):
     Custom Blob class for analyzing response times.
     """
 
-    def __init__(self, line=None):
-        super().__init__(line=line)
-        self.item = Item()
+    def __init__(self, line=None, custom_blob = None,custom_item = None):
+        super().__init__(line=line, custom_blob=custom_blob,custom_item=custom_item)
+        self.item = Item(custom_item=self.custom_item)
         self.std_dev = 0
 
     def add_line(self, line):

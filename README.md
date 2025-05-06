@@ -117,7 +117,6 @@ if __name__ == "__main__":
 - Implement more property checks for Items
 - Improve method for diffing integer ranges
 - Properly handle errors
-- Make it easier to "overwrite" functions in order to create custom calibration and diffing methods.
 - Do a lot more testing with this tool, bugs may still be present.
 - Multiple TODO's are scattered around the code, these will be addressed some time in the future.
 
