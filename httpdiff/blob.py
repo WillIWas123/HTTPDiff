@@ -216,7 +216,7 @@ class Blob:
                         self.original_lines[c] = b"REFLECTION"
 
                 if self.reflections:
-                    self.original_lines = [i for i in self.original_lines if len(i) > 1 and i != b"REFLECTION"] # Reflections often include strings that are identical to strings just around the reflection point. These are often characters of low length such as spaces. These mess with the indexing of the reflection point.
+                    self.original_lines = [i for i in self.original_lines if len(i.strip()) > 0 and i != b"REFLECTION"] # Reflections often include strings that are identical to strings just around the reflection point. These are often characters of low length such as spaces. These mess with the indexing of the reflection point.
 
 
             self.lock.release()
@@ -262,7 +262,7 @@ class Blob:
 
         lines = re.split(self.compiled, line)
         if self.reflections:
-            lines = [i for i in lines if len(i) > 1] # Reflections often include strings that are identical to strings just around the reflection point. These are often characters of low length such as spaces. These mess with the indexing of the reflection point.
+            lines = [i for i in lines if len(i.strip()) > 0] # Reflections often include strings that are identical to strings just around the reflection point. These are often characters of low length such as spaces. These mess with the indexing of the reflection point.
         diff = opcodes(self.original_lines, lines)
 
         for opcode,l1,l2,r1,r2 in diff:
