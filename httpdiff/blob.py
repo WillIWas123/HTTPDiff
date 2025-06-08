@@ -296,6 +296,8 @@ class ResponseTimeBlob(Blob):
         checks if new line behaves different from calibrated behavior
         """
         out = []
+        if len(self.item.lines) == 0:
+            return out
         lower = min(self.item.lines) - 7 * self.std_dev
         upper = max(self.item.lines) + 7 * self.std_dev
         if line < lower:
