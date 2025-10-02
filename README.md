@@ -43,22 +43,23 @@ Here comes some details of how the library is built, feel free to skip this sect
 
 ### Here's the process for calibrating:
 
-1. The Baseline object takes a response object as a parameter (among others), multiple Blobs are created, one for headers, reason (status code + message), response time, body etc.
-2. The input bytes are split on multiple characters `,.; and whitespaces`. A list of these bytes are stored as the original lines.
-3. A new response is inputted, the bytes are similarly split on the same characters.
+1. The add_response function in the Baseline object accepts a Response object as a parameter (among others), multiple Blobs are created, one for headers, reason (status code + message), response time, body etc.
+2. Each sections of the first response is stored as original_line.
+3. A new response is inputted. 
 4. Levenshtein's algorithm (similar to `git diff`) is used to generate opcodes describing how to transform the original lines to the new lines.
-5. Using these opcodes it is possible to relatively accurately determine the location of each Item, track replacements, insertions, deletions etc.
-6. A check for multiple properties are done, if all the lines in an Item have the same property it's stored as a method to analyze the lines in the future. A property in this case is a way to compare or measure a line.
-7. If there are no properties that can be used, the Item is going to be ignored in any future diffing.
-8. Repeat from step 3.
+5. The opcodes can be used to determine where static strings are within the HTTP response, these indexes are stored as individual Item objects.
+    5.1. The insertions are also tracked, often it is possible to see insertions of same length between static strings.
+6. A new response is inputted.
+7. The indexes for all the static Item's are updated, removing any dynamic strings that were accidentaly equal the last time around.
+8. Repeat from step 6.
 
 
 ### Here's the process for diffing:
 
-1. A new response is inputted, the bytes are similarly split on the same characters as before.
-2. Opcodes are generated in a similar manner as before.
-3. Each line is compared against its respective Item, verifying the new line has the same properties as all the previous lines in the Item.
-4. If the line does not adhere to one of the stored properties, a Diff is created.
+1. A new response is inputted.
+2. Opcodes are generated in a similar manner as in the calibration phase.
+3. Check if all known static strings are present, also check whether all known insertions occur at the expected index and are of expected length.
+4. Return a Diff object for each anomaly.
 5. (Optional) Find differences in two responses with expected different outcomes and compare the diffs.
 
 ## Example usage
@@ -75,7 +76,7 @@ import requests
 
 def calibrate_baseline(baseline):
     for _ in range(10):
-        value = "".join(random.choice(string.ascii_letters) for _ in range(random.randint(3,15)))
+        value = "".join(random.choice(string.ascii_letters) for _ in range(random.randint(3,50)))
         resp = requests.get(f"https://someurl/endpoint?parameter={value}")
         httpdiff_resp = Response(resp)
         baseline.add_response(httpdiff_resp,payload=value) # Adding value as a parameter for finding reflections
@@ -114,11 +115,10 @@ if __name__ == "__main__":
 
 ## Todo
 
-- Implement more property checks for Items
+- Work on possibilities of tracking insertions better, can we detect changes even within insertions?
 - Improve method for diffing integer ranges
 - Properly handle errors
 - Do a lot more testing with this tool, bugs may still be present.
-- Multiple TODO's are scattered around the code, these will be addressed some time in the future.
 
 ## Tips
 
