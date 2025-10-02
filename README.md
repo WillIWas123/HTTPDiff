@@ -96,8 +96,8 @@ def scan(baseline):
     resp = requests.get(f"https://someurl/endpoint?parameter={payload2}")
     httpdiff_resp2 = Response(resp)
 
-    diffs = list(baseline.is_diff(httpdiff_resp1))
-    diffs2 = list(baseline.is_diff(httpdiff_resp2))
+    diffs = list(baseline.find_diffs(httpdiff_resp1))
+    diffs2 = list(baseline.find_diffs(httpdiff_resp2))
     if diffs != diffs2:
         print("Vulnerable to SQL Injection!")
     else:
