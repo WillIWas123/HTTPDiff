@@ -214,10 +214,12 @@ class Blob:
                     self.insert_items[equal_item] = Item(item_l1,item_l2)
                 insert_item = self.insert_items[equal_item]
 
+                """ Disabling due to too many false-positives
                 if insert_item.l1 != item_l1:
                     out.append(Diff(item, f"Insertion occured at different location: {insert_item.l1} != {item_l1}"))
                 if insert_item.length > 0 and insert_item.length != item_r2-item_r1:
                     out.append(Diff(item, f"Length of insertion changed: {insert_item.length} != {r2-r1}"))
+                """
 
                 item_l1, item_l2, item_r1, item_r2 = None, None, None, None
 
