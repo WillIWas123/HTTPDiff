@@ -57,10 +57,9 @@ Here comes some details of how the library is built, feel free to skip this sect
 ### Here's the process for diffing:
 
 1. A new response is inputted.
-2. Opcodes are generated in a similar manner as in the calibration phase.
-3. Check if all known static strings are present, also check whether all known insertions occur at the expected index and are of expected length.
-4. Return a Diff object for each anomaly.
-5. (Optional) Find differences in two responses with expected different outcomes and compare the diffs.
+2. Go through each observed item and verify that they exist (in order) in the new response.
+3. Return a Diff object for each anomaly.
+4. (Optional) Find differences between two responses with expected different outcomes and compare the diffs.
 
 ## Example usage
 

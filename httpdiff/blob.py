@@ -100,7 +100,7 @@ class Blob:
 
                     if l2 < item.l2 and l2 > item.l1:
                         new_item = Item(l2+1,item.l2,initialized=False)
-                        new_equal_items.append(new_item)
+                        new_equal_items.append((item,new_item))
                         item.l2 = l2
                     if l1 > item.l1 and l1 < item.l2: 
                         item.l1 = l1
@@ -147,8 +147,12 @@ class Blob:
                 self.original_line = self.original_line[:item.l1] + self.original_line[item.l2:]
                     
                     
-        for item in new_equal_items:
-            self.equal_items.append(item)
+        for old_item, new_item in new_equal_items:
+            index = self.equal_items.index(old_item)
+            equal_items = self.equal_items[:index+1]
+            equal_items.append(new_item)
+            equal_items.extend(self.equal_items[index+1:])
+            self.equal_items = equal_items
 
         self.lock.release()
 
@@ -169,68 +173,23 @@ class Blob:
 
 
 
+    # TODO: How can we detect changes to dynamic content? Length? Verify presence?
     def find_diffs(self, line):
         """
-        Takes in bytes, checks if the index of known static strings have changed.
-        Also checks whether insertions of static lengths change.
+        Takes in line as bytes and checks if all previous static items exists in the new line.
         """
+        prev_index = 0
+        index = 0
         out = []
-        diff = opcodes(self.original_line, line)
-        equal_found = []
-        item_l1, item_l2, item_r1, item_r2 = None, None, None, None
-        for opcode, l1,l2,r1,r2 in diff:
-            item_found = False
-            if opcode == "equal":
-                for item in self.equal_items:
-                    if item.initialized is False:
-                        continue
-                    if item in equal_found:
-                        continue
-                    if l2 < item.l1 or l1 > item.l2: # Not even close
-                        continue
-
-                    if l1 <= item.l1 and l2 >= item.l2:
-                        equal_found.append(item)
-                        item_found = True
-
-                    # Code below exists because of payload reflection
-                    if l1 >= item.l1 and l2 <= item.l2:
-                        """
-                        The Indel algorithm may mess up whenever the payload reflection contains an equal part of a static string in close proximity.
-                        """
-                        if self.is_equal_after_all(line, r1, r2, item):
-                            equal_found.append(item)
-                            item_found = True
-                            
-            if item_found is False:
-                if item_l1 is None:
-                    item_l1 = l1
-                    item_r1 = r1
-                item_l2 = l2
-                item_r2 = r2
-            elif item_found is True and item_l1 is not None:
-                equal_item = equal_found[-1]
-                if self.insert_items.get(equal_item) is None:
-                    self.insert_items[equal_item] = Item(item_l1,item_l2)
-                insert_item = self.insert_items[equal_item]
-
-                """ Disabling due to too many false-positives
-                if insert_item.l1 != item_l1:
-                    out.append(Diff(item, f"Insertion occured at different location: {insert_item.l1} != {item_l1}"))
-                if insert_item.length > 0 and insert_item.length != item_r2-item_r1:
-                    out.append(Diff(item, f"Length of insertion changed: {insert_item.length} != {r2-r1}"))
-                """
-
-                item_l1, item_l2, item_r1, item_r2 = None, None, None, None
-
-
-
         for item in self.equal_items:
-            if item.initialized is False: # Item discovered at last calibration response. Ignoring for now
-                continue
-            if item not in equal_found:
-                out.append(Diff(item, f"Line is no longer present: {self.original_line[item.l1:item.l2]}")) 
-
+            text = self.original_line[item.l1:item.l2]
+            index = line.find(text,index)
+            if index == -1:
+                out.append(Diff(item, f"Line is no longer present: {text}")) 
+                index = prev_index # Going back to the previous index where the previous item was located
+            else:
+                prev_index = index
+                index+=len(text)
         return out
 
 
